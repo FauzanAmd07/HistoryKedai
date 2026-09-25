@@ -80,13 +80,22 @@ while($row = mysqli_fetch_assoc($query_grafik_harian)) { $data_harian[] = $row; 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CountUp.js untuk Animated Counter-Up (sesuai README - Dashboard Statistics) -->
+    <script src="https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js"></script>
+    <!-- SweetAlert2 untuk notifikasi & konfirmasi (sesuai README) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        /* CSS Sama seperti sebelumnya */
+        /* === DESIGN SYSTEM TOKENS (Sesuai README - Modul Dashboard) === */
         :root {
-            --color-blue-primary: #3B82F6; --color-blue-secondary: #BFDBFE; --color-blue-dark: #1E40AF;
-            --color-bg: #F3F4F6; --color-surface: #FFFFFF; --color-text-dark: #1F2937;
-            --color-text-muted: #6B7280; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --color-blue-primary: #3B82F6;   /* Biru Utama */
+            --color-blue-secondary: #BFDBFE; /* Biru Muda / Highlight Menu Active */
+            --color-blue-dark: #1E40AF;      /* Biru Gelap / Header Text */
+            --color-bg: #F3F4F6;             /* Background Halaman */
+            --color-surface: #FFFFFF;         /* Surface Card & Table */
+            --color-text-dark: #1F2937;       /* Teks Gelap */
+            --color-text-muted: #6B7280;      /* Teks Muted */
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             --border-radius: 12px; --font-body: 'Poppins', sans-serif;
             --color-success: #10B981; --color-warning: #F59E0B; --color-info: #6366F1;
         }
@@ -169,15 +178,15 @@ while($row = mysqli_fetch_assoc($query_grafik_harian)) { $data_harian[] = $row; 
         <div class="stats-grid">
             <div class="stat-card pendapatan">
                 <div class="icon-container"><i class="fas fa-dollar-sign"></i></div>
-                <div class="info"><h3>Rp <?php echo number_format($pendapatan_bulan_ini); ?></h3><span>Pendapatan Bulan Ini</span></div>
+                <div class="info"><h3 id="counter-pendapatan">0</h3><span>Pendapatan Bulan Ini</span></div>
             </div>
             <div class="stat-card pesanan">
                 <div class="icon-container"><i class="fas fa-bell"></i></div>
-                <div class="info"><h3><?php echo $jumlah_pesanan_baru; ?></h3><span>Pesanan Baru</span></div>
+                <div class="info"><h3 id="counter-pesanan-baru">0</h3><span>Pesanan Baru</span></div>
             </div>
             <div class="stat-card transaksi">
                 <div class="icon-container"><i class="fas fa-check-circle"></i></div>
-                <div class="info"><h3><?php echo $jumlah_transaksi_bulan_ini; ?></h3><span>Transaksi Selesai Bulan Ini</span></div>
+                <div class="info"><h3 id="counter-transaksi">0</h3><span>Transaksi Selesai Bulan Ini</span></div>
             </div>
             <div class="stat-card terlaris">
                 <div class="icon-container"><i class="fas fa-star"></i></div>
@@ -185,11 +194,11 @@ while($row = mysqli_fetch_assoc($query_grafik_harian)) { $data_harian[] = $row; 
             </div>
             <div class="stat-card bulan">
                 <div class="icon-container"><i class="fas fa-calendar-alt"></i></div>
-                <div class="info"><h3><?php echo $jumlah_terjual_bulan; ?> Pcs</h3><span>Terjual Bulan Ini</span></div>
+                <div class="info"><h3 id="counter-terjual-bulan">0</h3><span>Terjual Bulan Ini</span></div>
             </div>
             <div class="stat-card tahun">
                 <div class="icon-container"><i class="fas fa-calendar-check"></i></div>
-                <div class="info"><h3><?php echo $jumlah_terjual_tahun; ?> Pcs</h3><span>Terjual Tahun Ini</span></div>
+                <div class="info"><h3 id="counter-terjual-tahun">0</h3><span>Terjual Tahun Ini</span></div>
             </div>
         </div>
 
@@ -213,6 +222,37 @@ while($row = mysqli_fetch_assoc($query_grafik_harian)) { $data_harian[] = $row; 
     </main>
 
     <script>
+        // === DATA PHP KE JS ===
+        const pendapatanBulanIni = <?php echo (float)$pendapatan_bulan_ini; ?>;
+        const jumlahPesananBaru  = <?php echo (int)$jumlah_pesanan_baru; ?>;
+        const jumlahTransaksi    = <?php echo (int)$jumlah_transaksi_bulan_ini; ?>;
+        const terjualBulan       = <?php echo (int)$jumlah_terjual_bulan; ?>;
+        const terjualTahun       = <?php echo (int)$jumlah_terjual_tahun; ?>;
+
+        // === ANIMATED COUNTER-UP (Sesuai README - CountUp.js) ===
+        // Counter Pendapatan (format Rupiah)
+        const counterPendapatan = new countUp.CountUp('counter-pendapatan', pendapatanBulanIni, {
+            prefix: 'Rp ', separator: '.', decimal: ',', decimalPlaces: 0, duration: 2.5
+        });
+        if (!counterPendapatan.error) counterPendapatan.start();
+        else document.getElementById('counter-pendapatan').innerText = 'Rp ' + pendapatanBulanIni.toLocaleString('id-ID');
+
+        // Counter Pesanan Baru
+        const counterPesanan = new countUp.CountUp('counter-pesanan-baru', jumlahPesananBaru, { duration: 2 });
+        if (!counterPesanan.error) counterPesanan.start();
+
+        // Counter Transaksi
+        const counterTransaksi = new countUp.CountUp('counter-transaksi', jumlahTransaksi, { duration: 2 });
+        if (!counterTransaksi.error) counterTransaksi.start();
+
+        // Counter Terjual Bulan (dengan suffix Pcs)
+        const counterTerjualBulan = new countUp.CountUp('counter-terjual-bulan', terjualBulan, { suffix: ' Pcs', duration: 2 });
+        if (!counterTerjualBulan.error) counterTerjualBulan.start();
+
+        // Counter Terjual Tahun (dengan suffix Pcs)
+        const counterTerjualTahun = new countUp.CountUp('counter-terjual-tahun', terjualTahun, { suffix: ' Pcs', duration: 2.5 });
+        if (!counterTerjualTahun.error) counterTerjualTahun.start();
+
         // --- PROSES DATA GRAFIK MINGGUAN ---
         const weeklyDataRaw = <?php echo json_encode($data_mingguan); ?>;
         

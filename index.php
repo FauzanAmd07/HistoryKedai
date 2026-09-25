@@ -23,16 +23,21 @@ while ($row = mysqli_fetch_assoc($menu_query)) {
     
     <style>
 
+        /* === DESIGN SYSTEM TOKENS (Sesuai README - Modul Pelanggan) === */
         :root {
-            --color-primary: #6D28D9;
-            --color-secondary: #8B5CF6;
-            --color-light-bg: #F9FAFB;
-            --color-surface: #FFFFFF;
-            --color-dark-text: #111827;
-            --color-muted-text: #6B7280;
+            --color-primary: #6D28D9;      /* Ungu Utama (Buttons, Accents) */
+            --color-secondary: #8B5CF6;    /* Ungu Secondary / Hover */
+            --color-light-bg: #F9FAFB;     /* Background Utama */
+            --color-surface: #FFFFFF;      /* Card & Modal Container */
+            --color-dark-text: #111827;    /* Teks Utama */
+            --color-muted-text: #6B7280;   /* Teks Sekunder */
+            --color-white: #FFFFFF;
+            --color-purple-deep: #6D28D9;
+            --color-dark-purple: #5B21B6;
             --font-heading: 'Syne', sans-serif;
             --font-body: 'Poppins', sans-serif;
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.05);
             --border-radius: 12px;
         }
 
@@ -200,6 +205,14 @@ body {
         #toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 3000; }
         .toast { background: var(--color-purple-deep); color: var(--color-white); font-weight: 500; padding: 15px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); opacity: 0; transform: translateY(20px); transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* === Bounce animation untuk cart badge (sesuai README) === */
+        @keyframes cartBounce {
+            0%, 100% { transform: scale(1); }
+            30% { transform: scale(1.5); }
+            60% { transform: scale(0.9); }
+        }
+        .cart-badge-bounce { animation: cartBounce 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
 
         .cart-link { position: fixed; bottom: 30px; right: 30px; z-index: 1000; background: var(--color-primary); color: var(--color-white); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.3s ease; }
         .cart-link:hover { transform: scale(1.1); }
@@ -461,38 +474,62 @@ body {
             }
         });
         
-        // LOGIKA FILTER STABIL (Anti Gagal)
+        // === LOGIKA FILTER DENGAN ANIMASI GSAP STAGGER (Sesuai README) ===
         const filterBtns = document.querySelectorAll('.filter-btn');
         const searchInput = document.getElementById('search-menu');
         const menuCards = document.querySelectorAll('.menu-card');
 
-        const filterAndSearch = () => {
-            const activeFilter = document.querySelector('.filter-btn.active').dataset.filter.toLowerCase();
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
-            
-            menuCards.forEach(card => {
-                const cardCategory = card.dataset.category.toLowerCase();
-                const cardName = card.dataset.name.toLowerCase();
-                const isCategoryMatch = activeFilter === 'all' || cardCategory === activeFilter;
-                const isSearchMatch = searchTerm === "" || cardName.includes(searchTerm);
-                
-                if (isCategoryMatch && isSearchMatch) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
+        // Fungsi filter dengan animasi GSAP stagger persis sesuai blueprint README
+        function filterKategori(kategoriId, searchTerm = '') {
+            gsap.to('.menu-card', {
+                opacity: 0,
+                y: 20,
+                duration: 0.2,
+                onComplete: () => {
+                    // Tampilkan item sesuai kategori & pencarian
+                    document.querySelectorAll('.menu-card').forEach(card => {
+                        const cardCategory = card.dataset.category ? card.dataset.category.toLowerCase() : '';
+                        const cardName = card.dataset.name ? card.dataset.name.toLowerCase() : '';
+                        const isCategoryMatch = kategoriId === 'all' || cardCategory === kategoriId.toLowerCase();
+                        const isSearchMatch = searchTerm === '' || cardName.includes(searchTerm.toLowerCase());
+
+                        if (isCategoryMatch && isSearchMatch) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                    // Animasi Masuk Smooth dengan stagger
+                    const visibleCards = document.querySelectorAll('.menu-card[style*="display: block"]');
+                    if (visibleCards.length > 0) {
+                        gsap.to(visibleCards, {
+                            opacity: 1,
+                            y: 0,
+                            duration: 0.4,
+                            stagger: 0.05
+                        });
+                    }
                 }
             });
-        };
+        }
 
+        // Event listener untuk tombol filter
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelector('.filter-btn.active').classList.remove('active');
                 btn.classList.add('active');
-                filterAndSearch();
+                const activeFilter = btn.dataset.filter || 'all';
+                const searchTerm = searchInput ? searchInput.value : '';
+                filterKategori(activeFilter, searchTerm);
             });
         });
-        if(searchInput) {
-            searchInput.addEventListener('keyup', filterAndSearch);
+
+        // Event listener untuk input pencarian (realtime)
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const activeFilter = document.querySelector('.filter-btn.active').dataset.filter || 'all';
+                filterKategori(activeFilter, searchInput.value);
+            });
         }
 
         // LOGIKA KERANJANG, MODAL, TOAST (LENGKAP)
@@ -522,6 +559,13 @@ body {
             if (cart[id]) { cart[id].qty++; } else { cart[id] = { name: name, price: price, qty: 1 }; }
             sessionStorage.setItem('cart', JSON.stringify(cart));
             updateCartCount();
+            // Efek bounce pada cart badge (sesuai README - micro-ripple/bounce effect)
+            const cartCountEl = document.getElementById('cart-count');
+            if (cartCountEl) {
+                cartCountEl.classList.remove('cart-badge-bounce');
+                void cartCountEl.offsetWidth; // reflow untuk restart animasi
+                cartCountEl.classList.add('cart-badge-bounce');
+            }
             showToast(`"${name}" ditambahkan!`);
         };
         

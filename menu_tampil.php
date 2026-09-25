@@ -21,20 +21,23 @@ $query = mysqli_query($koneksi, $sql);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- SweetAlert2 untuk konfirmasi dialog cantik (sesuai README) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
+        /* === DESIGN SYSTEM TOKENS (Sesuai README - Modul Dashboard) === */
         :root {
-            --color-blue-primary: #3B82F6; /* Biru Utama */
-            --color-blue-secondary: #BFDBFE; /* Biru Muda */
-            --color-blue-dark: #1E40AF;
-            --color-bg: #F3F4F6;
-            --color-surface: #FFFFFF;
-            --color-text-dark: #1F2937;
-            --color-text-muted: #6B7280;
+            --color-blue-primary: #3B82F6;   /* Biru Utama */
+            --color-blue-secondary: #BFDBFE; /* Biru Muda / Highlight Menu Active */
+            --color-blue-dark: #1E40AF;      /* Biru Gelap / Header Text */
+            --color-bg: #F3F4F6;             /* Background Halaman */
+            --color-surface: #FFFFFF;         /* Surface Card & Table */
+            --color-text-dark: #1F2937;       /* Teks Gelap */
+            --color-text-muted: #6B7280;      /* Teks Muted */
             --color-success: #10B981;
             --color-warning: #F59E0B;
             --color-danger: #EF4444;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             --border-radius: 12px;
             --font-body: 'Poppins', sans-serif;
         }
@@ -268,7 +271,7 @@ $query = mysqli_query($koneksi, $sql);
                             <td>Rp <?php echo number_format($data['harga'], 0, ',', '.'); ?></td>
                             <td class="action-links">
                                 <a href="menu_ubah.php?id=<?php echo $data['id_menu']; ?>" class="ubah">Ubah</a>
-                                <a href="menu_hapus.php?id=<?php echo $data['id_menu']; ?>" class="hapus" onclick="return confirm('Anda yakin ingin menghapus data ini?')">Hapus</a>
+                                <a href="#" class="hapus" onclick="konfirmasiHapusMenu('menu_hapus.php?id=<?php echo $data['id_menu']; ?>', '<?php echo htmlspecialchars(addslashes($data['nama_menu'])); ?>'); return false;">Hapus</a>
                             </td>
                         </tr>
                     <?php } ?>
@@ -276,6 +279,26 @@ $query = mysqli_query($koneksi, $sql);
             </table>
         </div>
     </main>
+
+    <!-- Script SweetAlert2 Konfirmasi Hapus Menu (sesuai README - dialog cantik) -->
+    <script>
+    function konfirmasiHapusMenu(url, nama) {
+        Swal.fire({
+            title: 'Hapus Menu?',
+            html: `Yakin ingin mengarsipkan menu <strong>${nama}</strong>?<br><small style="color:#6B7280">Menu ini tidak akan tampil di halaman pelanggan.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EF4444',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: '<i class="fas fa-archive"></i> Ya, Arsipkan!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    }
+    </script>
 
 </body>
 </html>
